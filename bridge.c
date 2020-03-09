@@ -76,7 +76,7 @@ static void usage(char *program) {
             program);
 
     fprintf(stdout, "args:\n");
-    for (int i = 0; i < (sizeof(option_info) / sizeof(option_info)); i++) {
+    for (int i = 0; i < (sizeof(option_info) / sizeof(option_info[0])); i++) {
         fprintf(stdout, "--%s %s %s\n", option_info[i].lopt.name, option_info[i].arg_example, option_info[i].arg_help);
     }
 }
