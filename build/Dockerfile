@@ -1,7 +1,11 @@
-# --- build smart gateway ---
-ARG BUILDER_IMAGE_NAME
+# --- Build the bridge
+FROM centos:8 AS builder
 
-FROM ${BUILDER_IMAGE_NAME} AS builder
+RUN yum install epel-release -y && \
+        yum update -y --setopt=tsflags=nodocs && \
+        yum install qpid-proton-c-devel --setopt=tsflags=nodocs -y && \
+        dnf install gcc make -y && \
+        yum clean all
 
 ENV D=/home/bridge
 
@@ -11,12 +15,11 @@ COPY . $D/
 RUN     make && \
         mv bridge /tmp/
 
-# --- end build, create smart gateway layer ---
+# --- end build, create bridge runtime layer ---
 FROM centos:8
 
 LABEL io.k8s.display-name="SmartGateway AMQP Bridge" \
-      io.k8s.description="A component of the Service Assurance Framework on the server side that ingests data from AMQP 1.x and provides a metrics scrape endpoint for Prometheus, and forwards events to ElasticSearch" \
-      maintainer="Leif Madsen <leif@redhat.com>"
+      io.k8s.description="Reads data from AMQP via proton and writes to a unix or UDP socket"
 
 RUN yum install epel-release -y && \
         yum update -y --setopt=tsflags=nodocs && \
