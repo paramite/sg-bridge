@@ -1,17 +1,15 @@
-# SA-Benchmark and prototype
+# Bridge between AMQP and Smart Gateway
 
-## GOLANG Server
+Connects to a QDR.  Creates and AQMP endpoint. Receives and processes collectd AMQP JSON messages.  Forwards the JSON messages to the Smart Gateway through a UDP / Unix socket.
 
-UDP / Unix Socket gateway
-
-### Build
+## Build
 
 ```bash
-go build cmd/server/server.go
+make
 ```
 
-### Usage
+## Usage
 
 ```bash
-./server net -port 30000
+./bridge 127.0.0.1 5672 sg 0 127.0.0.1 30000
 ```

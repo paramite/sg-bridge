@@ -1,6 +1,6 @@
-*.prof
-client
-server
-*.sum
-launch.json
-.vscode
+bridge
+gmon.out
+*.o
+perf.data*
+obj
+
