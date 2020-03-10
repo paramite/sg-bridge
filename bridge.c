@@ -125,6 +125,8 @@ int main(int argc, char **argv) {
 
     srand(time(0));
 
+    setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+
     sprintf(cid_buf, DEFAULT_CID, rand() % 1024);
 
     app.stat_period = 0;        /* disabled */
