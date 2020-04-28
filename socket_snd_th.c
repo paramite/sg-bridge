@@ -132,8 +132,9 @@ static int decode_message(app_data_t *app, pn_rwbytes_t data) {
                             printf("%d ",errno);
                             return 1;
                     }
+                } else {
+                  app->sock_sent++;
                 }
-                app->sock_sent++;
             }
         }
     } else {
