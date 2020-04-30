@@ -60,8 +60,8 @@ struct option_info {
 
 struct option_info option_info[] = {
     {{"amqp_url", required_argument, 0, ARG_AMQP_URL}, "host[:port]/path", "URL of the AMQP endpoint (%s)", DEFAULT_AMQP_URL},
-    {{"gw_unix", optional_argument, 0, ARG_GW_UNIX}, "/path/to/socket", "Connect to gateway with unix socket (default)", DEFAULT_UNIX_SOCKET_PATH},
-    {{"gw_inet", optional_argument, 0, ARG_GW_INET}, "host[:port]", "Connect to gateway with inet socket (unix is default)", DEFAULT_UNIX_SOCKET_PATH},
+    {{"gw_unix", required_argument, 0, ARG_GW_UNIX}, "/path/to/socket", "Connect to gateway with unix socket (default)", DEFAULT_UNIX_SOCKET_PATH},
+    {{"gw_inet", required_argument, 0, ARG_GW_INET}, "host[:port]", "Connect to gateway with inet socket (unix is default)", DEFAULT_UNIX_SOCKET_PATH},
     {{"block", no_argument, 0, ARG_BLOCK}, "", "Outgoing connection blocking (%s)", DEFAULT_SOCKET_BLOCK},
     {{"stat_period", required_argument, 0, ARG_STAT_PERIOD}, "period_in_seconds", "How often to print stats, 0 for no stats (%s)", DEFAULT_STATS_PERIOD},
     {{"cid", required_argument, 0, ARG_CID}, "connection_id", "AMQP container ID (should be unique) (%s)", DEFAULT_CONTAINER_ID_PATTERN},
