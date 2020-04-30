@@ -87,10 +87,10 @@ static void handle_receive(app_data_t *app, pn_event_t *event, int *batch_done) 
                 app->max_q_depth = inuse;
 
             int link_credit = pn_link_credit(l);
-            //pn_link_flow(l, rb_size(app->rbin) - link_credit);
-             if (link_credit < rb_free_size(app->rbin)) {
-                 *batch_done = link_credit;
-                 pn_link_flow(l, rb_free_size(app->rbin) - link_credit);
+            int free_size = rb_free_size(app->rbin);
+            *batch_done = ( free_size == 0 );
+             if (link_credit < free_size) {
+                 pn_link_flow(l, free_size - link_credit);
              }
             if ((app->message_count > 0) && (app->sock_sent >= app->message_count)) {
                 close_all(pn_event_connection(event), app);
