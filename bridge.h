@@ -15,14 +15,14 @@
 #define DEFAULT_AMQP_URL "amqp://127.0.0.1:5672/collectd/telemetry"
 #define DEFAULT_INET_HOST "127.0.0.1"
 #define DEFAULT_INET_PORT "30000"
+#define DEFAULT_INET_TARGET DEFAULT_INET_HOST ":" DEFAULT_INET_PORT
 #define DEFAULT_CID       "bridge-%x"
 #define DEFAULT_CONTAINER_ID_PATTERN "sa-%x"
 #define DEFAULT_STATS_PERIOD "0"
 #define DEFAULT_SOCKET_BLOCK "false"
 #define DEFAULT_STOP_COUNT "0"
-
-#define RING_BUFFER_COUNT 1000
-#define RING_BUFFER_SIZE  2048
+#define DEFAULT_RING_BUFFER_COUNT "5000"
+#define DEFAULT_RING_BUFFER_SIZE "2048"
 
 #define AMQP_URL_REGEX "^amqp://(([a-z]+)(:([a-z]+))*@)*([a-zA-Z_0-9.-]+)(:([0-9]+))*(.+)$"
 //#define AMQP_URL_REGEX "^amqp://"
@@ -43,6 +43,8 @@ typedef struct  {
     int verbose;
     int domain;         // connection to SG, AF_UNIX || AF_INET
     int stat_period;
+    int ring_buffer_size;
+    int ring_buffer_count;
 
     amqp_connection amqp_con;
     const char *container_id;
@@ -68,6 +70,8 @@ typedef struct  {
     /* Rcv stats */
     long amqp_received;
     long amqp_partial;
+    long amqp_total_batches;
+    long amqp_link_credit;
 
     /* Ring buffer stats */
     int max_q_depth;

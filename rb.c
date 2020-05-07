@@ -92,14 +92,13 @@ pn_rwbytes_t *rb_put(rb_rwbytes_t *rb) {
     }
     pn_rwbytes_t *next_buffer = NULL;
 
-
     int next = (rb->head + 1) % rb->count;
     if (next != rb->tail) {
         rb->head = next;
         next_buffer = &rb->ring_buffer[rb->head];
-    pthread_mutex_lock(&rb->rb_mutex);
+        pthread_mutex_lock(&rb->rb_mutex);
         pthread_cond_broadcast(&rb->rb_ready);
-    pthread_mutex_unlock(&rb->rb_mutex);
+        pthread_mutex_unlock(&rb->rb_mutex);
     } else {
         rb->overruns++;
         rb->ring_buffer[rb->head].size = 0;
@@ -116,21 +115,13 @@ pn_rwbytes_t *rb_get(rb_rwbytes_t *rb) {
 
     int next;
 
-
     next = (rb->tail + 1) % rb->count;
     while (next == rb->head) {
-        clock_gettime(CLOCK_MONOTONIC, &rb->total_t1);
-        time_diff(rb->total_t2, rb->total_t1, &rb->total_active);
-
-    pthread_mutex_lock(&rb->rb_mutex);
-        pthread_cond_wait(&rb->rb_ready, &rb->rb_mutex);
-    pthread_mutex_unlock(&rb->rb_mutex);
-
-        clock_gettime(CLOCK_MONOTONIC, &rb->total_t2);
-        time_diff(rb->total_t1, rb->total_t2, &rb->total_wait);
+         pthread_mutex_lock(&rb->rb_mutex);
+         pthread_cond_wait(&rb->rb_ready, &rb->rb_mutex);
+         pthread_mutex_unlock(&rb->rb_mutex);
 
         next = (rb->tail + 1) % rb->count;
-
         rb->queue_block++;
     }
     // set data size to zero
@@ -139,7 +130,6 @@ pn_rwbytes_t *rb_get(rb_rwbytes_t *rb) {
     rb->tail = next;
 
     rb->processed++;
-
 
     return &rb->ring_buffer[rb->tail];
 }
@@ -151,7 +141,10 @@ int rb_inuse_size(rb_rwbytes_t *rb) {
 int rb_free_size(rb_rwbytes_t *rb) {
     assert(rb->head != rb->tail);
 
-    return rb->head > rb->tail ? rb->count - (rb->head - rb->tail) : rb->tail - rb->head ;
+    int head = rb->head;
+    int tail = rb->tail;
+
+    return head > tail ? rb->count - (head - tail) : tail - head ;
 }
 
 int rb_size(rb_rwbytes_t *rb) {

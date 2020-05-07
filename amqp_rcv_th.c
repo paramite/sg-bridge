@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
+#include <assert.h>
 #include <features.h>
-
 #include <proton/connection.h>
 #include <proton/delivery.h>
 #include <proton/link.h>
@@ -11,8 +11,6 @@
 #include <proton/session.h>
 #include <proton/transport.h>
 #include <proton/types.h>
-
-#include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <time.h>
@@ -24,7 +22,6 @@
 static int exit_code = 0;
 
 static time_t start_time;
-int batch_count = 0;
 
 /* Close the connection and the listener so so we will get a
  * PN_PROACTOR_INACTIVE event and exit, once all outstanding events
@@ -88,10 +85,11 @@ static void handle_receive(app_data_t *app, pn_event_t *event, int *batch_done) 
 
             int link_credit = pn_link_credit(l);
             int free_size = rb_free_size(app->rbin);
-            *batch_done = ( free_size == 0 );
-             if (link_credit < free_size) {
-                 pn_link_flow(l, free_size - link_credit);
-             }
+            *batch_done = (free_size == 0);
+            int credit_window = app->rbin->count / 2;
+            if (link_credit < credit_window ) {
+                pn_link_flow(l, credit_window);
+            }
             if ((app->message_count > 0) && (app->sock_sent >= app->message_count)) {
                 close_all(pn_event_connection(event), app);
 
@@ -111,7 +109,7 @@ static bool handle(app_data_t *app, pn_event_t *event, int *batch_done) {
         case PN_DELIVERY: {
             pn_link_t *l = pn_event_link(event);
             if (l) { /* Only delegate link-related events */
-                    handle_receive(app, event, batch_done);
+                handle_receive(app, event, batch_done);
             }
             break;
         }
@@ -142,7 +140,7 @@ static bool handle(app_data_t *app, pn_event_t *event, int *batch_done) {
                 pn_terminus_set_address(pn_link_source(l), app->amqp_con.address);
                 pn_link_open(l);
                 /* cannot receive without granting credit: */
-                pn_link_flow(l, RING_BUFFER_COUNT);
+                pn_link_flow(l, app->ring_buffer_count);
             }
             break;
 
@@ -265,8 +263,9 @@ void run(app_data_t *app) {
             if (batch_done) {
                 break;
             }
-            batch_count++;
         }
+
+        app->amqp_total_batches++;
         pn_proactor_done(app->proactor, events);
     } while (true);
 }

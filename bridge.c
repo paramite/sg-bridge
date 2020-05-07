@@ -47,6 +47,8 @@ enum program_args {
     ARG_STAT_PERIOD,
     ARG_CID,
     ARG_COUNT,
+    ARG_RING_BUFFER_COUNT,
+    ARG_RING_BUFFER_SIZE,
     ARG_VERBOSE,
     ARG_HELP
 };
@@ -60,9 +62,11 @@ struct option_info {
 
 struct option_info option_info[] = {
     {{"amqp_url", required_argument, 0, ARG_AMQP_URL}, "host[:port]/path", "URL of the AMQP endpoint (%s)", DEFAULT_AMQP_URL},
-    {{"gw_unix", required_argument, 0, ARG_GW_UNIX}, "/path/to/socket", "Connect to gateway with unix socket (default)", DEFAULT_UNIX_SOCKET_PATH},
-    {{"gw_inet", required_argument, 0, ARG_GW_INET}, "host[:port]", "Connect to gateway with inet socket (unix is default)", DEFAULT_UNIX_SOCKET_PATH},
-    {{"block", no_argument, 0, ARG_BLOCK}, "", "Outgoing connection blocking (%s)", DEFAULT_SOCKET_BLOCK},
+    {{"gw_unix", optional_argument, 0, ARG_GW_UNIX}, "/path/to/socket", "Connect to gateway with unix socket (%s)", DEFAULT_UNIX_SOCKET_PATH},
+    {{"gw_inet", optional_argument, 0, ARG_GW_INET}, "host[:port]", "Connect to gateway with inet socket (%s)", DEFAULT_INET_TARGET},
+    {{"block", no_argument, 0, ARG_BLOCK}, "", "Outgoing socket connection will block (%s)", DEFAULT_SOCKET_BLOCK},
+    {{"rbc", required_argument, 0, ARG_RING_BUFFER_COUNT}, "4096", "Number of message buffers between AMQP and Outgoing (%s)", DEFAULT_RING_BUFFER_COUNT},
+    {{"rbs", required_argument, 0, ARG_RING_BUFFER_SIZE}, "2048", "Size of a message buffer between AMQP and Outgoing (%s)", DEFAULT_RING_BUFFER_SIZE},
     {{"stat_period", required_argument, 0, ARG_STAT_PERIOD}, "period_in_seconds", "How often to print stats, 0 for no stats (%s)", DEFAULT_STATS_PERIOD},
     {{"cid", required_argument, 0, ARG_CID}, "connection_id", "AMQP container ID (should be unique) (%s)", DEFAULT_CONTAINER_ID_PATTERN},
     {{"count", required_argument, 0, ARG_COUNT}, "stop_count", "Number of AMQP mesg to rcv before exit, 0 for continous (%s)", DEFAULT_STOP_COUNT},
@@ -75,9 +79,22 @@ static void usage(char *program) {
             "The missing link between AMQP and golang.\n\n",
             program);
 
+    int widths[] = {0,0};
+
+    for (int i = 0; i < (sizeof(option_info) / sizeof(option_info[0])); i++) {
+        int len;
+        if ( (len = strlen(option_info[i].lopt.name)) > widths[0] ) {
+            widths[0] = len;
+        }
+        if ( (len = strlen(option_info[i].arg_example)) > widths[1] ) {
+            widths[1] = len;
+        }
+    }
     fprintf(stdout, "args:\n");
     for (int i = 0; i < (sizeof(option_info) / sizeof(option_info[0])); i++) {
-        fprintf(stdout, "--%s %s %s\n", option_info[i].lopt.name, option_info[i].arg_example, option_info[i].arg_help);
+        char help_buffer[200];
+        sprintf(help_buffer, option_info[i].arg_help, option_info[i].arg_default);
+        fprintf(stdout, "  --%-*s %-*s %s\n", widths[0], option_info[i].lopt.name, widths[1], option_info[i].arg_example, help_buffer);
     }
 }
 
@@ -138,6 +155,8 @@ int main(int argc, char **argv) {
     app.socket_flags = MSG_DONTWAIT;
     app.peer_host = DEFAULT_INET_HOST;
     app.peer_port = DEFAULT_INET_PORT;
+    app.ring_buffer_size = atoi(DEFAULT_RING_BUFFER_SIZE);
+    app.ring_buffer_count = atoi(DEFAULT_RING_BUFFER_COUNT);
 
     int num_args = sizeof(option_info) / sizeof(struct option_info);
     struct option *longopts = malloc(sizeof(struct option) * num_args);
@@ -159,6 +178,16 @@ int main(int argc, char **argv) {
                     app.unix_socket_name = optarg;
                 }
                 app.domain = AF_UNIX;
+                break;
+            case ARG_RING_BUFFER_COUNT:
+                if (optarg != NULL) {
+                    app.ring_buffer_count = atoi(optarg);
+                }                    
+                break;
+            case ARG_RING_BUFFER_SIZE:
+                if (optarg != NULL) {
+                    app.ring_buffer_size = atoi(optarg);
+                }                    
                 break;
             case ARG_GW_INET:
                 if (optarg != NULL) {
@@ -186,7 +215,7 @@ int main(int argc, char **argv) {
                 break;
             case ARG_VERBOSE:
             case 'v':
-                app.verbose = 1;
+                app.verbose++;
                 break;
             case 'h':
             case ARG_HELP:
@@ -221,10 +250,10 @@ int main(int argc, char **argv) {
     
 
     if (app.standalone) {
-        printf("standalone mode\n");
+        printf("Standalone mode\n");
     } 
 
-    app.rbin = rb_alloc(RING_BUFFER_COUNT, RING_BUFFER_SIZE);
+    app.rbin = rb_alloc(app.ring_buffer_count, app.ring_buffer_size);
 
     app.amqp_rcv_th_running = true;
     pthread_create(&app.amqp_rcv_th, NULL, amqp_rcv_th, (void *)&app);
@@ -234,23 +263,25 @@ int main(int argc, char **argv) {
     long last_amqp_received = 0;
     long last_overrun = 0;
     long last_out = 0;
+    long last_sock_overrun = 0;
 
     long sleep_count = 1;
 
     while (1) {
         sleep(1);
-
         if (sleep_count == app.stat_period) {
-            printf("in: %ld(%ld), overrun: %ld(%ld), out: %ld(%ld), would_block: %ld\n",
+            printf("in: %ld(%ld), amqp_overrun: %ld(%ld), out: %ld(%ld), sock_overrun: %ld(%ld), batch_size: %f\n",
                    app.amqp_received, app.amqp_received - last_amqp_received,
                    app.rbin->overruns, app.rbin->overruns - last_overrun,
                    app.sock_sent, app.sock_sent - last_out,
-                   app.sock_would_block);
+                   app.sock_would_block, app.sock_would_block - last_sock_overrun,
+                   app.amqp_received/(float)app.amqp_total_batches);
             sleep_count = 1;
         }
         last_amqp_received = app.amqp_received;
         last_overrun = app.rbin->overruns;
         last_out = app.sock_sent;
+        last_sock_overrun = app.sock_would_block;
 
         if (app.socket_snd_th_running == 0) {
             pthread_join(app.socket_snd_th, NULL);
