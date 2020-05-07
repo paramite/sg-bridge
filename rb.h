@@ -13,8 +13,8 @@ typedef struct {
     int count;
     int buf_size;
 
-    int head;
-    int tail;
+    volatile int head;
+    volatile int tail;
 
     pthread_mutex_t rb_mutex;
     pthread_cond_t rb_ready;
@@ -22,10 +22,10 @@ typedef struct {
     // stats
     //
     // Buffer full
-    long overruns;
+    volatile long overruns;
     // Number of messages procesed
-    long processed;
-    long queue_block;
+    volatile long processed;
+    volatile long queue_block;
 
     struct timespec total_active, total_wait;
     struct timespec total_t1, total_t2;
