@@ -47,6 +47,7 @@ static void check_condition(pn_event_t *e, pn_condition_t *cond,
 static void handle_receive(app_data_t *app, pn_event_t *event, int *batch_done) {
     /*    printf("handle_receive %s\n", app->container_id);*/
 
+    *batch_done = 0;
     pn_delivery_t *d = pn_event_delivery(event);
     if (pn_delivery_readable(d)) {
         pn_link_t *l = pn_delivery_link(d);
@@ -79,16 +80,11 @@ static void handle_receive(app_data_t *app, pn_event_t *event, int *batch_done) 
             pn_delivery_update(d, PN_ACCEPTED);
             pn_delivery_settle(d); /* settle and free d */
 
-            int inuse = rb_inuse_size(app->rbin);
-            if (inuse > app->max_q_depth)
-                app->max_q_depth = inuse;
-
             int link_credit = pn_link_credit(l);
-            int free_size = rb_free_size(app->rbin);
-            *batch_done = (free_size == 0);
-            int credit_window = app->rbin->count / 2;
-            if (link_credit < credit_window ) {
-                pn_link_flow(l, credit_window);
+            int free = rb_free_size(app->rbin);
+            int credit = free - link_credit + 1;
+            if ( credit > 0 ) {
+                pn_link_flow(l, credit);
             }
             if ((app->message_count > 0) && (app->sock_sent >= app->message_count)) {
                 close_all(pn_event_connection(event), app);
@@ -140,7 +136,7 @@ static bool handle(app_data_t *app, pn_event_t *event, int *batch_done) {
                 pn_terminus_set_address(pn_link_source(l), app->amqp_con.address);
                 pn_link_open(l);
                 /* cannot receive without granting credit: */
-                pn_link_flow(l, app->ring_buffer_count);
+                pn_link_flow(l, rb_free_size(app->rbin));
             }
             break;
 
@@ -152,6 +148,7 @@ static bool handle(app_data_t *app, pn_event_t *event, int *batch_done) {
             pn_transport_t *t = pn_event_transport(event);
             pn_transport_require_auth(t, false);
             pn_sasl_allowed_mechs(pn_sasl(t), "ANONYMOUS");
+            pn_transport_set_max_frame(t, app->ring_buffer_size);
             break;
         }
         case PN_CONNECTION_LOCAL_OPEN: {
@@ -185,6 +182,8 @@ static bool handle(app_data_t *app, pn_event_t *event, int *batch_done) {
             if (app->verbose) {
                 printf("PN_SESSION_INIT %s\n", app->container_id);
             }
+            pn_session_set_incoming_capacity(pn_event_session(event), app->ring_buffer_size * app->ring_buffer_count);
+            pn_session_set_outgoing_window(pn_event_session(event), app->ring_buffer_count);
             break;
         }
         case PN_SESSION_REMOTE_OPEN: {
