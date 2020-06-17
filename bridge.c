@@ -276,8 +276,9 @@ int main(int argc, char **argv) {
                    app.sock_sent, app.sock_sent - last_out,
                    app.sock_would_block, app.sock_would_block - last_sock_overrun,
                    app.amqp_received/(float)app.amqp_total_batches);
-            sleep_count = 1;
+            sleep_count = 0;
         }
+        sleep_count++;
         last_amqp_received = app.amqp_received;
         last_overrun = app.rbin->overruns;
         last_out = app.sock_sent;
