@@ -22,7 +22,7 @@ $(shell mkdir -p $(dir $(OBJS)) >/dev/null)
 $(shell mkdir -p $(dir $(DEPS)) >/dev/null)
 
 CC=gcc
-CFLAGS=-Wall -O3 -std=gnu99
+CFLAGS+=-Wall -O3 -std=gnu99
 LDLIBS=-lqpid-proton -lpthread
 LDFLAGS=
 
