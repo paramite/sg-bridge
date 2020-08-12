@@ -131,8 +131,8 @@ static int process_message_body(app_data_t *app, pn_data_t *body) {
         size_t count = pn_data_get_list(body);
         pn_data_enter(body);
         for (size_t i = 0; i < count; i++) {
-            if (pn_data_next(body) && !err) {
-                err = process_message_body(app, body);
+            if (pn_data_next(body)) {
+                err += process_message_body(app, body);
             }
         }
         pn_data_exit(body);
