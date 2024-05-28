@@ -136,7 +136,7 @@ static void usage(char *program) {
     }
 }
 
-static int match_regex(char *regmatch, char *matches[], int n_matches,
+int match_regex(char *regmatch, char *matches[], int n_matches,
                        const char *to_match) {
     /* "M" contains the matches found. */
     regmatch_t m[n_matches];
@@ -284,7 +284,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Invalid AMQP URL: %s", app.amqp_con.url);
         exit(1);
     }
-    app.amqp_con.host = strdup(matches[6]);
+    if(strchr(matches[6], '[') != NULL && strchr(matches[6], ']') != NULL) {
+        app.amqp_con.host = strndup(matches[6]+1, strlen(matches[6])-2);
+    } else {
+        app.amqp_con.host = strdup(matches[6]);
+    }
+
     app.amqp_con.address = strdup(matches[9]);
     if (matches[8] != NULL) {
         app.amqp_con.port = strdup(matches[8]);

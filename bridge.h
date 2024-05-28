@@ -26,7 +26,7 @@
 #define DEFAULT_AMQP_BLOCK "false"
 
 #define AMQP_URL_REGEX                                                         \
-    "^(amqps*)://(([a-z]+)(:([a-z]+))*@)*([a-zA-Z_0-9.-]+)(:([0-9]+))*(.+)$"
+    "^(amqps*)://(([a-z]+)(:([a-z]+))*@)*([a-zA-Z_0-9.-]+|\\[[:a-fA-F0-9]+\\])(:([0-9]+))?(/[^\\s]*)?$"
 
 typedef struct {
     char *user;
@@ -87,5 +87,8 @@ typedef struct {
     socklen_t sa_len;
     int send_sock;
 } app_data_t;
+
+int match_regex(char *regmatch, char *matches[], int n_matches,
+                       const char *to_match);
 
 #endif
