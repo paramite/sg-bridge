@@ -16,6 +16,7 @@
 
 #include "bridge.h"
 #include "minunit.h"
+#include "utils.h"
 #include <stdio.h>
 
 /***************** test suite *****************/
