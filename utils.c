@@ -31,9 +31,8 @@ char *time_snprintf(char *buf, size_t n, struct timespec t1) {
     return buf;
 }
 
-
 int match_regex(char *regmatch, char *matches[], int n_matches,
-                       const char *to_match) {
+                const char *to_match) {
     /* "M" contains the matches found. */
     regmatch_t m[n_matches];
     regex_t regex;

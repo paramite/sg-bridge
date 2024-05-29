@@ -245,8 +245,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Invalid AMQP URL: %s", app.amqp_con.url);
         exit(1);
     }
-    if(strchr(matches[6], '[') != NULL && strchr(matches[6], ']') != NULL) {
-        app.amqp_con.host = strndup(matches[6]+1, strlen(matches[6])-2);
+    if (strchr(matches[6], '[') != NULL && strchr(matches[6], ']') != NULL) {
+        app.amqp_con.host = strndup(matches[6] + 1, strlen(matches[6]) - 2);
     } else {
         app.amqp_con.host = strdup(matches[6]);
     }
