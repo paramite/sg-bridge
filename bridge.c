@@ -236,10 +236,10 @@ int main(int argc, char **argv) {
 
     match_regex(AMQP_URL_REGEX, matches, 10, app.amqp_con.url);
     if (matches[3] != NULL) {
-        app.amqp_con.user = strdup(matches[2]);
+        app.amqp_con.user = strdup(matches[3]);
     }
     if (matches[5] != NULL) {
-        app.amqp_con.password = strdup(matches[4]);
+        app.amqp_con.password = strdup(matches[5]);
     }
     if (matches[6] == NULL || matches[9] == NULL) {
         fprintf(stderr, "Invalid AMQP URL: %s", app.amqp_con.url);

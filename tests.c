@@ -18,7 +18,6 @@
 #include "bridge.h"
 #include "minunit.h"
 
-
 /***************** test suite *****************/
 
 static char * test_match_amqp_url_hostname() {
@@ -26,11 +25,22 @@ static char * test_match_amqp_url_hostname() {
     memset(matches, 0, sizeof(matches));
     match_regex(AMQP_URL_REGEX, matches, 10, "amqp://scooby:doo@some.k8s.svc:5666/foo/bar");
 
-    mu_assert("Failed to parse amqp_url in form of hostname: user", !strcmp(matches[2], "scooby"));
-    mu_assert("Failed to parse amqp_url in form of hostname: password", !strcmp(matches[4], "doo"));
-    mu_assert("Failed to parse amqp_url in form of hostname: host", !strcmp(matches[6], "some.k8s.svc"));
-    mu_assert("Failed to parse amqp_url in form of hostname: port", !strcmp(matches[8], "5666"));
-    mu_assert("Failed to parse amqp_url in form of hostname: address", !strcmp(matches[9], "/foo/bar"));
+    mu_assert("Failed to parse full amqp_url in form of hostname: user", !strcmp(matches[3], "scooby"));
+    mu_assert("Failed to parse full amqp_url in form of hostname: password", !strcmp(matches[5], "doo"));
+    mu_assert("Failed to parse full amqp_url in form of hostname: host", !strcmp(matches[6], "some.k8s.svc"));
+    mu_assert("Failed to parse full amqp_url in form of hostname: port", !strcmp(matches[8], "5666"));
+    mu_assert("Failed to parse full amqp_url in form of hostname: address", !strcmp(matches[9], "/foo/bar"));
+
+    char *matches2[10];
+    memset(matches2, 0, sizeof(matches2));
+    match_regex(AMQP_URL_REGEX, matches2, 10, "amqps://other.k8s.svc:5666/baz");
+
+    mu_assert("Failed to parse amqp_url w/o user info in form of hostname: user", matches2[3] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of hostname: password", matches2[5] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of hostname: host", !strcmp(matches2[6], "other.k8s.svc"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of hostname: port", !strcmp(matches2[8], "5666"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of hostname: address", !strcmp(matches2[9], "/baz"));
+
     return 0;
 }
 
@@ -39,11 +49,21 @@ static char * test_match_amqp_url_ipv4() {
     memset(matches, 0, sizeof(matches));
     match_regex(AMQP_URL_REGEX, matches, 10, "amqp://scooby:doo@127.0.0.1:5666/foo/bar");
 
-    mu_assert("Failed to parse amqp_url in form of hostname: user", !strcmp(matches[2], "scooby"));
-    mu_assert("Failed to parse amqp_url in form of hostname: password", !strcmp(matches[4], "doo"));
-    mu_assert("Failed to parse amqp_url in form of hostname: host", !strcmp(matches[6], "127.0.0.1"));
-    mu_assert("Failed to parse amqp_url in form of hostname: port", !strcmp(matches[8], "5666"));
-    mu_assert("Failed to parse amqp_url in form of hostname: address", !strcmp(matches[9], "/foo/bar"));
+    mu_assert("Failed to parse amqp_url in form of IPv4: user invalid: %s", !strcmp(matches[3], "scooby"));
+    mu_assert("Failed to parse amqp_url in form of IPv4: password", !strcmp(matches[5], "doo"));
+    mu_assert("Failed to parse amqp_url in form of IPv4:i host", !strcmp(matches[6], "127.0.0.1"));
+    mu_assert("Failed to parse amqp_url in form of IPv4: port", !strcmp(matches[8], "5666"));
+    mu_assert("Failed to parse amqp_url in form of IPv4: address", !strcmp(matches[9], "/foo/bar"));
+    
+    char *matches2[10];
+    memset(matches2, 0, sizeof(matches2));
+    match_regex(AMQP_URL_REGEX, matches2, 10, "amqps://127.0.0.1:5666/baz");
+
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv4: user", matches2[3] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv4: password", matches2[5] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv4: host", !strcmp(matches2[6], "127.0.0.1"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv4: port", !strcmp(matches2[8], "5666"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv4: address", !strcmp(matches2[9], "/baz"));
     return 0;
 }
 
@@ -52,11 +72,21 @@ static char * test_match_amqp_url_ipv6() {
     memset(matches, 0, sizeof(matches));
     match_regex(AMQP_URL_REGEX, matches, 10, "amqp://scooby:doo@[fe80::abcd:fcff:fe07:9999]:5666/foo/bar");
 
-    mu_assert("Failed to parse amqp_url in form of hostname: user", !strcmp(matches[2], "scooby"));
-    mu_assert("Failed to parse amqp_url in form of hostname: password", !strcmp(matches[4], "doo"));
-    mu_assert("Failed to parse amqp_url in form of hostname: host", !strcmp(matches[6], "fe80::abcd:fcff:fe07:9999"));
-    mu_assert("Failed to parse amqp_url in form of hostname: port", !strcmp(matches[8], "5666"));
-    mu_assert("Failed to parse amqp_url in form of hostname: address", !strcmp(matches[9], "/foo/bar"));
+    mu_assert("Failed to parse amqp_url in form of IPv6: user", !strcmp(matches[3], "scooby"));
+    mu_assert("Failed to parse amqp_url in form of IPv6: password", !strcmp(matches[5], "doo"));
+    mu_assert("Failed to parse amqp_url in form of IPv6: host", !strcmp(matches[6], "[fe80::abcd:fcff:fe07:9999]"));
+    mu_assert("Failed to parse amqp_url in form of IPv6: port", !strcmp(matches[8], "5666"));
+    mu_assert("Failed to parse amqp_url in form of IPv6: address", !strcmp(matches[9], "/foo/bar"));
+
+    char *matches2[10];
+    memset(matches2, 0, sizeof(matches2));
+    match_regex(AMQP_URL_REGEX, matches2, 10, "amqps://[fe80::abcd:fcff:fe07:9999]:5666/baz");
+
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: user", matches2[3] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: password", matches2[5] == NULL);
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: host", !strcmp(matches2[6], "[fe80::abcd:fcff:fe07:9999]"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: port", !strcmp(matches2[8], "5666"));
+    mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: address", !strcmp(matches2[9], "/baz"));
     return 0;
 }
 

@@ -1,6 +1,7 @@
 #include "utils.h"
 #include <regex.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void time_diff(struct timespec t1, struct timespec t2, struct timespec *diff) {
     if (t2.tv_nsec < t1.tv_nsec) {
