@@ -116,7 +116,7 @@ static char *test_match_amqp_url_ipv6() {
     char *matches2[10];
     memset(matches2, 0, sizeof(matches2));
     match_regex(AMQP_URL_REGEX, matches2, 10,
-                "amqps://[fe80::abcd:fcff:fe07:9999]:5666/baz");
+                "amqps://[fe80::abcd:fcff:fe07:9999]:5666/bas");
 
     mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: user",
               matches2[3] == NULL);
@@ -128,7 +128,7 @@ static char *test_match_amqp_url_ipv6() {
     mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: port",
               !strcmp(matches2[8], "5666"));
     mu_assert("Failed to parse amqp_url w/o user info in form of IPv6: address",
-              !strcmp(matches2[9], "/baz"));
+              !strcmp(matches2[9], "/bas"));
     return 0;
 }
 
