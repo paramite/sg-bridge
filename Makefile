@@ -6,7 +6,9 @@ VERSION=$(MAJOR).$(MINOR)
 BIN := bridge
 TEST_EXEC = tests
 
-SRCS = $(filter-out tests.c, $(wildcard *.c))
+# Specify the source files, excluding the test and the main source file
+MAIN_SRC = bridge.c
+SRCS = $(filter-out tests.c $(MAIN_SRC), $(wildcard *.c))
 TEST_SRC = tests.c
 
 OBJDIR := obj
@@ -67,7 +69,7 @@ image: version-check
 	@buildah bud -t ${HUB_NAMESPACE}/${BRIDGE_IMAGE_NAME}:latest -f build/Dockerfile .
 	@echo 'Done.'
 
-$(BIN): $(OBJS)
+$(BIN): $(OBJS) $(OBJDIR)/$(basename $(MAIN_SRC)).o
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LDLIBS)
 
 $(OBJDIR)/%.o: %.c

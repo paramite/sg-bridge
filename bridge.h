@@ -88,7 +88,4 @@ typedef struct {
     int send_sock;
 } app_data_t;
 
-int match_regex(char *regmatch, char *matches[], int n_matches,
-                       const char *to_match);
-
 #endif
