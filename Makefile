@@ -72,13 +72,13 @@ image: version-check
 $(BIN): $(OBJS) $(OBJDIR)/$(basename $(MAIN_SRC)).o
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS) $(LDLIBS)
 
-$(OBJDIR)/%.o: %.c
-$(OBJDIR)/%.o: %.c $(DEPDIR)/%.d
+$(OBJDIR)/%.o: %.c %.h
+$(OBJDIR)/%.o: %.c $(DEPDIR)/%.d %.h
 	$(PRECOMPILE)
 	$(COMPILE.c) $<
 	$(POSTCOMPILE)
 
-$(OBJDIR)/%.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
+$(OBJDIR)/%.o : %.c $(DEPDIR)/%.d %.h | $(DEPDIR)
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
 
 .PRECIOUS: $(DEPDIR)/%.d
